@@ -14,9 +14,17 @@ class Lateph{
 		 'router'=>array(
 			  'class'=>'LRouter'
 		 ),
+		 'db'=>array(
+			  'class'=>'PDO',
+			  'construktor'=>array(
+					'string'=>'mysql:host=127.0.0.1;dbname=track;charset=utf8',
+					'user'=>'root',
+					'pass'=>''
+				)
+		 ),
 	);
 	public function __construct($config) {
-	//	$time = microtime(true);
+		$time = microtime(true);
 		self::$_app = $this;
 		$this->sysFolder = dirname(__FILE__);
 		
@@ -29,7 +37,7 @@ class Lateph{
 		$controller = new $class;
 		$action = $this->getActionName();
 		$controller->$action();
-	//	echo "Time Elapsed: ".(microtime(true) - $time)."s";
+		echo "Time Elapsed: ".(microtime(true) - $time)."s";
 		
 	}
 	public function __get($name) {
@@ -41,7 +49,20 @@ class Lateph{
 			if(!isset($componen['class'])){
 				throw new Exception("Class Name Tidak Difinisikan");
 			}
-			$this->$name = new $componen['class'];
+			if(isset($componen['construktor'])){
+				$reflect  = new ReflectionClass($componen['class']);
+				$this->$name = $reflect->newInstanceArgs($componen['construktor']);
+			}
+			else{
+				$this->$name = new $componen['class'];
+			}
+			foreach($componen as $var=>$value){
+				if($value=='class' or $value=='construktor'){
+					continue;
+				}
+				$this->$name->$var = $value;
+			}
+			
 		}
 		catch (Exception $e){
 			throw new Exception($e->getMessage());
