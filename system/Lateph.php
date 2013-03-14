@@ -1,4 +1,7 @@
 <?php
+/**
+ * @property LRouter $router Description
+ */
 class Lateph{
 	/**
 	 * Framework Kecil Cobak"
@@ -7,17 +10,13 @@ class Lateph{
 	private static $_app;
 	private $appFolder;
 	private $sysFolder;
-	/**
-	 *
-	 * @var LRouter
-	 */
-	private $router = array(
-		 'class'=>'LRouter'
+	private $components = array(
+		 'router'=>array(
+			  'class'=>'LRouter'
+		 ),
 	);
-	private $components = array();
 	public function __construct($config) {
-		$time = microtime(true); 
-			
+	//	$time = microtime(true);
 		self::$_app = $this;
 		$this->sysFolder = dirname(__FILE__);
 		
@@ -25,12 +24,44 @@ class Lateph{
 			$this->$key = $value;
 		}
 		spl_autoload_register("Lateph::autoLoadSys");
-		$router = new LRouter;
-		echo "Time Elapsed: ".(microtime(true) - $time)."s";
+		spl_autoload_register("Lateph::autoLoadAppController");
+		$class = $this->getControllerClass();
+		$controller = new $class;
+		$action = $this->getActionName();
+		$controller->$action();
+	//	echo "Time Elapsed: ".(microtime(true) - $time)."s";
 		
+	}
+	public function __get($name) {
+		try{
+			if(!isset($this->components[$name])){
+				throw new Exception("Componen Tidak Ditemukan");
+			}
+			$componen = $this->components[$name];
+			if(!isset($componen['class'])){
+				throw new Exception("Class Name Tidak Difinisikan");
+			}
+			$this->$name = new $componen['class'];
+		}
+		catch (Exception $e){
+			throw new Exception($e->getMessage());
+		}
+		return $this->$name;
+	}
+	public function getControllerClass(){
+		return ucfirst($this->router->getController().'Controller');
+	}
+	public function getActionName(){
+		return 'action'.ucfirst($this->router->getAction());
 	}
 	public static function autoLoadSys($className){
 		 $filename = Lateph::app()->sysFolder."/" . $className . ".php";
+		 if (is_readable($filename)) {
+			  require $filename;
+		 }
+	}
+	public static function autoLoadAppController($className){
+		 $filename = Lateph::app()->appFolder."/controllers/" . $className . ".php";
 		 if (is_readable($filename)) {
 			  require $filename;
 		 }
